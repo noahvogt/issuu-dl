@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 #
-# issuu-dl v0.2
+# issuu-dl v0.3
 #
 # download pdf from issuu.com
 #
 # tested (and working) on 04 Mar 2021
-#
 
-# arch-deps: python-tqdm, python-termcolor, img2pdf
+# arch-deps: python-tqdm, python-termcolor, img2pdf, python-validators
 
 import requests
 import sys
@@ -18,7 +17,11 @@ from termcolor import colored
 from tqdm import tqdm
 
 def usage():
-    print("USAGE: %s [full issuu url of target document]" % sys.argv[0])
+    print("USAGE: issuu-dl [full issuu url of target document]")
+    exit()
+
+def errorMsg():
+    print("Error: wrong URL format, please recheck your link")
     exit()
 
 try:
@@ -27,30 +30,40 @@ except:
     usage()
 
 doc = url.split('/')
-doc = doc[3] + '/' + doc[5]
+try:
+    doc = doc[3] + '/' + doc[5]
+except IndexError:
+    errorMsg()
 print(doc)
-print("[*] doc is '%s'" % colored(doc, 'yellow'))
+print("[*] doc is '{}'".format(colored(doc, 'yellow')))
 outfile = doc.replace('/', '_') + ".pdf"
 
 print("[*] opening page...")
 s = requests.Session()
-r = s.get(url)
-assert r.status_code == 200
+
+try:
+    r = s.get(url)
+except requests.exceptions.TooManyRedirects:
+    errorMsg()
+try:
+    assert r.status_code == 200
+except AssertionError:
+    errorMsg()
 print(colored("[+] url confirmed", "green"))
 assert 'issuu-reader3-embed-files' in r.content.decode()
 print(colored("[+] reader3 support confirmed", "green"))
 
 print("[*] downloading reader3_4.json...")
 
-r = s.get("https://reader3.isu.pub/%s/reader3_4.json" % doc)
+r = s.get("https://reader3.isu.pub/{}/reader3_4.json".format(doc))
 j = json.loads(r.content.decode())
 
 pubId = j["document"]["publicationId"]
 revId = j["document"]["revisionId"]
 pages = j["document"]["pages"]
 
-print(colored("[+] fetched document data: ", "green") + colored("publicationId is %s, revisionId is %s" % (pubId, revId), "yellow"))
-print(colored("[+] found %d pages" % len(pages), "green"))
+print(colored("[+] fetched document data: ", "green") + colored("publicationId is {}, revisionId is {}".format(pubId, revId), "yellow"))
+print(colored("[+] found {} pages".format(len(pages)), "green"))
 
 print("[*] downloading pages...")
 
@@ -62,14 +75,13 @@ for page in tqdm(pages):
     open(f, "wb").write(r.content)
     filenames.append(f)
 
-print(colored("[+] downloaded %s jpg files" % len(pages), "green"))
+print(colored("[+] downloaded {} jpg files".format(len(pages), "green")))
 
 print("[*] converting to single pdf...")
-
 with open(outfile, "wb") as out:
     out.write(img2pdf.convert(filenames))
 
-print(colored("[+] output pdf '%s' is ready" % colored(outfile, "yellow"), "green"))
+print(colored("[+] output pdf '{}' is ready".format(colored(outfile, "yellow")), "green"))
 
 print("[*] cleaning up jpg files...")
 for f in filenames:
