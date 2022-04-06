@@ -4,4 +4,4 @@ This is a simple program to quickly install magazines etc. on [issuu.com](https:
 
 ## Dependencies
 
-This python script needs three non-standard python modules: termcolor, img2pdf and tqdm.
+This python script needs three non-standard python modules: termcolor, img2pdf and tqdm, typer.
