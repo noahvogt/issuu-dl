@@ -22,8 +22,8 @@ from tqdm import tqdm
 
 
 class OutType(str, Enum):
-    PDF = 'pdf'
-    CBZ = 'cbz'
+    PDF = "pdf"
+    CBZ = "cbz"
 
 
 def error_msg(msg: str):
@@ -31,7 +31,7 @@ def error_msg(msg: str):
     sys.exit(1)
 
 
-class Downloader():
+class Downloader:
     def __init__(self):
         self.filenames = []
         self.temp_dir = ""
@@ -41,17 +41,15 @@ class Downloader():
         self.pages = ""
         self.request_session = requests.Session()
 
-
     def check_document_format(self, url, output_file):
-        self.target_doc = url.split('/')
+        self.target_doc = url.split("/")
         try:
-            self.target_doc = self.target_doc[3] + '/' + self.target_doc[5]
+            self.target_doc = self.target_doc[3] + "/" + self.target_doc[5]
         except IndexError:
             error_msg("wrong URL format, please recheck your link")
-        print("[*] target_doc is '{}'".format(colored(self.target_doc, 'yellow')))
-        self.outfile_base = self.target_doc.replace('/', '_')
+        print("[*] target_doc is '{}'".format(colored(self.target_doc, "yellow")))
+        self.outfile_base = self.target_doc.replace("/", "_")
         self.outfile = self.outfile_base + "." + output_file
-
 
     def download_metadata(self, url):
         print("[*] opening page...")
@@ -66,60 +64,76 @@ class Downloader():
         except AssertionError:
             error_msg("http status code received: {}".format(request.status_code))
         print(colored("[+] url confirmed", "green"))
-        assert 'issuu-reader3-embed-files' in request.content.decode()
+        assert "issuu-reader3-embed-files" in request.content.decode()
         print(colored("[+] reader3 support confirmed", "green"))
 
         print("[*] downloading reader3_4.json...")
 
-        request = request_session.get("https://reader3.isu.pub/{}/reader3_4.json".
-                                      format(self.target_doc))
+        request = request_session.get(
+            "https://reader3.isu.pub/{}/reader3_4.json".format(self.target_doc)
+        )
         json_data = json.loads(request.content.decode())
 
         publication_id = json_data["document"]["publicationId"]
         revision_id = json_data["document"]["revisionId"]
         self.pages = json_data["document"]["pages"]
 
-        print(colored("[+] fetched document data: ", "green") +
-              colored("publicationId is {}, revisionId is {}".format(
-              publication_id, revision_id), "yellow"))
+        print(
+            colored("[+] fetched document data: ", "green")
+            + colored(
+                "publicationId is {}, revisionId is {}".format(
+                    publication_id, revision_id
+                ),
+                "yellow",
+            )
+        )
         print(colored("[+] found {} pages".format(len(self.pages)), "green"))
-
 
     def download_pages(self):
         print("[*] downloading pages...")
 
         self.filenames = []
-        self.temp_dir = str(os.getpid())+"-"+self.outfile_base
+        self.temp_dir = str(os.getpid()) + "-" + self.outfile_base
 
         try:
             os.mkdir(self.temp_dir)
         except (FileExistsError, PermissionError):
             error_msg("could not create temporary directory '{}'".format(self.temp_dir))
         for page in tqdm(self.pages):
-            image_url = page["imageUri"].split('/')
-            image_path = os.path.join(self.temp_dir, image_url[1]+"-"+image_url[3])
-            request = self.request_session.get("https://"+page["imageUri"])
+            image_url = page["imageUri"].split("/")
+            image_path = os.path.join(self.temp_dir, image_url[1] + "-" + image_url[3])
+            request = self.request_session.get("https://" + page["imageUri"])
             with open(image_path, "wb") as write_image:
                 write_image.write(request.content)
             self.filenames.append(image_path)
 
         print(colored("[+] downloaded {} jpg files".format(len(self.pages)), "green"))
 
-
     def convert_files(self, output_file):
         if output_file == "pdf":
             print("[*] converting to single pdf...")
             with open(self.outfile, "wb") as out:
                 out.write(img2pdf.convert(self.filenames))
-            print(colored("[+] output pdf '{}' is ready".format(
-                  colored(self.outfile, "yellow")), "green"))
+            print(
+                colored(
+                    "[+] output pdf '{}' is ready".format(
+                        colored(self.outfile, "yellow")
+                    ),
+                    "green",
+                )
+            )
         else:
             print("[*] converting to single cbz...")
-            shutil.make_archive(self.outfile, 'zip', self.temp_dir)
-            os.rename(self.outfile+".zip", self.outfile)
-            print(colored("[+] output cbz '{}' is ready".format(
-                  colored(self.outfile, "yellow")), "green"))
-
+            shutil.make_archive(self.outfile, "zip", self.temp_dir)
+            os.rename(self.outfile + ".zip", self.outfile)
+            print(
+                colored(
+                    "[+] output cbz '{}' is ready".format(
+                        colored(self.outfile, "yellow")
+                    ),
+                    "green",
+                )
+            )
 
     def remove_tempfiles(self):
         print("[*] cleaning up temporary files...")
@@ -130,10 +144,14 @@ class Downloader():
 
 main = typer.Typer(add_completion=False)
 
+
 @main.command(no_args_is_help=True)
-def greeting(url: str=typer.Argument(..., help='Full issuu url'), output_file:
-             OutType = typer.Option('pdf', "--output-type", "-o",
-             help='Whether output is a pdf or cbz.')):
+def greeting(
+    url: str = typer.Argument(..., help="Full issuu url"),
+    output_file: OutType = typer.Option(
+        "pdf", "--output-type", "-o", help="Whether output is a pdf or cbz."
+    ),
+):
 
     download = Downloader()
     download.check_document_format(url, output_file)
@@ -143,6 +161,5 @@ def greeting(url: str=typer.Argument(..., help='Full issuu url'), output_file:
     download.remove_tempfiles()
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
