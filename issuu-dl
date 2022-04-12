@@ -47,7 +47,9 @@ class Downloader:
             self.target_doc = self.target_doc[3] + "/" + self.target_doc[5]
         except IndexError:
             error_msg("wrong URL format, please recheck your link")
-        print("[*] target_doc is '{}'".format(colored(self.target_doc, "yellow")))
+        print(
+            "[*] target_doc is '{}'".format(colored(self.target_doc, "yellow"))
+        )
         self.outfile_base = self.target_doc.replace("/", "_")
         self.outfile = self.outfile_base + "." + output_file
 
@@ -62,7 +64,9 @@ class Downloader:
         try:
             assert request.status_code == 200
         except AssertionError:
-            error_msg("http status code received: {}".format(request.status_code))
+            error_msg(
+                "http status code received: {}".format(request.status_code)
+            )
         print(colored("[+] url confirmed", "green"))
         assert "issuu-reader3-embed-files" in request.content.decode()
         print(colored("[+] reader3 support confirmed", "green"))
@@ -98,16 +102,26 @@ class Downloader:
         try:
             os.mkdir(self.temp_dir)
         except (FileExistsError, PermissionError):
-            error_msg("could not create temporary directory '{}'".format(self.temp_dir))
+            error_msg(
+                "could not create temporary directory '{}'".format(
+                    self.temp_dir
+                )
+            )
         for page in tqdm(self.pages):
             image_url = page["imageUri"].split("/")
-            image_path = os.path.join(self.temp_dir, image_url[1] + "-" + image_url[3])
+            image_path = os.path.join(
+                self.temp_dir, image_url[1] + "-" + image_url[3]
+            )
             request = self.request_session.get("https://" + page["imageUri"])
             with open(image_path, "wb") as write_image:
                 write_image.write(request.content)
             self.filenames.append(image_path)
 
-        print(colored("[+] downloaded {} jpg files".format(len(self.pages)), "green"))
+        print(
+            colored(
+                "[+] downloaded {} jpg files".format(len(self.pages)), "green"
+            )
+        )
 
     def convert_files(self, output_file):
         if output_file == "pdf":
