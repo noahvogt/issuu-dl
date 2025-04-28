@@ -1,6 +1,8 @@
 # issuu-dl
 
-This is a simple program to quickly install magazines etc. on [issuu.com](https://issuu.com) using ```issuu-dl [url]```.
+This is a simple commandline program to quickly install magazines etc. on [issuu.com](https://issuu.com) using ```issuu-dl [url]```.
+
+Tested (and working) on 28 Apr 2025.
 
 ## Dependencies
 
