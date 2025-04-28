@@ -53,29 +53,18 @@ class Downloader:
         self.outfile_base = self.target_doc.replace("/", "_")
         self.outfile = self.outfile_base + "." + output_file
 
-    def download_metadata(self, url):
+    def download_metadata(self):
         print("[*] opening page...")
         request_session = requests.Session()
-
+        print("[*] downloading reader3_4.json...")
         try:
-            request = request_session.get(url)
+            request = request_session.get(
+                "https://reader3.isu.pub/{}/reader3_4.json".format(
+                    self.target_doc
+                )
+            )
         except requests.exceptions.TooManyRedirects:
             error_msg("too many redirect requests made")
-        try:
-            assert request.status_code == 200
-        except AssertionError:
-            error_msg(
-                "http status code received: {}".format(request.status_code)
-            )
-        print(colored("[+] url confirmed", "green"))
-        assert "issuu-reader3-embed-files" in request.content.decode()
-        print(colored("[+] reader3 support confirmed", "green"))
-
-        print("[*] downloading reader3_4.json...")
-
-        request = request_session.get(
-            "https://reader3.isu.pub/{}/reader3_4.json".format(self.target_doc)
-        )
         json_data = json.loads(request.content.decode())
 
         publication_id = json_data["document"]["publicationId"]
@@ -169,7 +158,7 @@ def greeting(
 
     download = Downloader()
     download.check_document_format(url, output_file)
-    download.download_metadata(url)
+    download.download_metadata()
     download.download_pages()
     download.convert_files(output_file)
     download.remove_tempfiles()
